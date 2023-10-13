@@ -1,20 +1,16 @@
 package main;
 
-import java.util.function.Function;
-
-import neuralNetwork.Layer;
 import neuralNetwork.NeuralNetwork;
-import neuralNetwork.activationFunction.SigmoidActivation;
 
 public class Main {
     public static void main(String[] args) throws Exception {
         // Initialiser l'IA
-        NeuralNetwork neuralNetwork = new NeuralNetwork();
+        NeuralNetwork neuralNetwork = new NeuralNetwork(4,2, new int[]{4});
+        neuralNetwork.randomizeWeights();
 
-        neuralNetwork.addLayer(new Layer(4, 4, new SigmoidActivation()));
-        neuralNetwork.addLayer(new Layer(4, 2, new SigmoidActivation()));
-
+        
         // Entraîner l'IA pendant 10 000 itérations
+        /* 
         for (int i = 0; i < 1000000; i++) {
             // Générer deux points aléatoires
             Point point1 = generateRandomPoint();
@@ -27,7 +23,7 @@ public class Main {
 
             // Entraîner l'IA avec les deux points et le score
             neuralNetwork.train(point1, point2, callback);
-        }
+        }*/
 
         // Exemple d'utilisation de la fonction process après l'entraînement
 
@@ -36,7 +32,10 @@ public class Main {
         for(int i = 0; i < totalTest; i++) {
             Point inputPoint1 = generateRandomPoint();
             Point inputPoint2 = generateRandomPoint();
-            Point outputPoint = neuralNetwork.process(inputPoint1, inputPoint2);
+
+            float[] output = neuralNetwork.process(new float[] {inputPoint1.getX()/10, inputPoint1.getY()/10, inputPoint2.getX()/10, inputPoint2.getY()/10});
+            Point outputPoint = new Point(output[0] * 10, output[1] * 10);
+            //Point outputPoint = new Point((inputPoint1.getX() + inputPoint2.getX())/2, (inputPoint1.getY() + inputPoint2.getY())/2);
 
             score += getScore(inputPoint1, inputPoint2, outputPoint);
         }

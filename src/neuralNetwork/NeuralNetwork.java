@@ -2,96 +2,59 @@ package neuralNetwork;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
-
-import main.Point;
 
 public class NeuralNetwork {
     private List<Layer> layers;
 
-    public NeuralNetwork() {
+    public NeuralNetwork(int inputSize, int outputSize, int[] midleLayersSize) {
         layers = new ArrayList<>();
+
+        layers.add(new Layer(inputSize));
+
+        for(int i = 0; i < midleLayersSize.length; i++) {
+            layers.add(new Layer(midleLayersSize[i], layers.get(i)));
+        }
+
+        layers.add(new Layer(outputSize, layers.get(layers.size() - 1)));
     }
 
-    public void addLayer(Layer layer) {
-        layers.add(layer);
-    }
-
-    public void train(Point point1, Point point2, Function<Point, Float> callback) {
-        Point outputPoint = process(point1, point2);
-        float score = callback.apply(outputPoint);
-
-        float[] target = new float[2];
-        target[0] = (point1.getX() + point2.getX()) / 2.0f;
-        target[1] = (point1.getY() + point2.getY()) / 2.0f;
-
-        float[] error = new float[2];
-        error[0] = target[0] - outputPoint.getX();
-        error[1] = target[1] - outputPoint.getY();
-
-        backwardPropagation(error, score);
-    }
-
-    private void backwardPropagation(float[] error, float score) {
-        for (int i = layers.size() - 1; i >= 0; i--) {
+    public void randomizeWeights() {
+        for(int i = 1; i < layers.size(); i++) {
             Layer layer = layers.get(i);
-            float[] gradients = new float[layer.getOutputSize()];
 
-            if (i == layers.size() - 1) {
-                // Dérivée de la fonction d'activation de la dernière couche
-                for (int j = 0; j < layer.getOutputSize(); j++) {
-                    float output = layer.getActivationFunction().derivative(layer.getOutputs()[j]);
-                    gradients[j] = error[j] * output * score;
+            for(int j = 0; j < layer.getNumberOfNeurons(); j++) {
+                Neuron neuron = layer.getNeuron(j);
+
+                for(int k = 0; k < neuron.getWeights().length; k++) {
+                    neuron.getWeights()[k] = (float) (Math.random() * 2 - 1);
                 }
-            } else {
-                // Dérivée de la fonction d'activation des couches précédentes
-                Layer nextLayer = layers.get(i + 1);
-                for (int j = 0; j < layer.getOutputSize(); j++) {
-                    float output = layer.getActivationFunction().derivative(layer.getOutputs()[j]);
-                    float sum = 0.0f;
-                    for (int k = 0; k < nextLayer.getOutputSize(); k++) {
-                        sum += nextLayer.getWeights()[j][k] * nextLayer.getGradients()[k];
-                    }
-                    gradients[j] = output * sum;
-                }
+
+                neuron.setBias((float) (Math.random() * 2 - 1));
             }
-
-            layer.setGradients(gradients);
-            updateWeights(layer);
         }
     }
 
-    private void updateWeights(Layer layer) {
-        float learningRate = 0.1f; // Taux d'apprentissage
+    public float[] process(float[] inputs) {
+        for(int i = 0; i < inputs.length; i++) {
+            layers.get(0).getNeuron(i).setOutput(inputs[i]);
+        }
 
-        for (int j = 0; j < layer.getOutputSize(); j++) {
-            for (int i = 0; i < layer.getInputSize(); i++) {
-                float weight = layer.getWeights()[i][j];
-                float gradient = layer.getGradients()[j];
-                float delta = learningRate * gradient * layer.getInputs()[i];
-                layer.getWeights()[i][j] = weight + delta;
+        for(int i = 1; i < layers.size(); i++) {
+            Layer layer = layers.get(i);
+
+            for(int j = 0; j < layer.getNumberOfNeurons(); j++) {
+                layer.getNeuron(j).calculateOutput();
             }
-
-            float bias = layer.getBiases()[j];
-            float delta = learningRate * layer.getGradients()[j];
-            layer.getBiases()[j] = bias + delta;
-        }
-    }
-
-    public Point process(Point point1, Point point2) {
-        float[] input = new float[4];
-        input[0] = point1.getX();
-        input[1] = point1.getY();
-        input[2] = point2.getX();
-        input[3] = point2.getY();
-
-        float[] output = new float[2];
-
-        for (Layer layer : layers) {
-            layer.setInputs(input);
-            output = layer.forwardPropagation(input);
         }
 
-        return new Point(output[0]*10, output[1]*10);
+        Layer outputLayer = layers.get(layers.size() - 1);
+        float[] outputs = new float[outputLayer.getNumberOfNeurons()];
+
+        for(int i = 0; i < outputs.length; i++) {
+            outputs[i] = outputLayer.getNeuron(i).getOutput();
+        }
+
+        return outputs;
     }
+
 }
